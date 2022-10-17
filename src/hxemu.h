@@ -1,0 +1,126 @@
+#pragma once
+
+#include <triton/context.hpp>
+
+#include <pro.h>
+
+#include <optional>
+
+namespace hxemu
+{
+
+class Emulator; // Required to declare EmulatorHookInterface
+
+class EmulatorHookInterface
+{
+public:
+    virtual ~EmulatorHookInterface() {};
+
+    // Callback executing after an instruction is executed.
+    virtual void OnEmulateInstruction(Emulator& emulator, triton::arch::Instruction& instruction) = 0;
+};
+
+class Emulator
+{
+public:
+    // FIXME: Implement support for multiple platform later on.
+    Emulator() : ctx_(triton::arch::architecture_e::ARCH_X86_64) {}
+
+    // Initialize the emulator. Emulation will start at `start_address` and RIP will be concrete.
+    void Initialize(ea_t start_address);
+
+    // Symbolize all registers
+    void SymbolizeAllRegister();
+
+    // Resets the emulator context
+    void ResetContext();
+
+    // Emulate one instruction
+    bool EmulateOneInstruction(triton::arch::Instruction& address);
+
+    // Emulate code until PC is symbolic
+    bool EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<EmulatorHookInterface> hooks = nullptr);
+
+    // Slice expressions
+    std::unordered_map<uint64_t, triton::engines::symbolic::SharedSymbolicExpression> SliceExpression(const triton::engines::symbolic::SharedSymbolicExpression& expr);
+
+    // Transform a symbolic expression into a new symbolic variable.
+    void SymbolizeExpression(const triton::engines::symbolic::SharedSymbolicExpression& expr);
+
+    // Returns the register object
+    // TODO: This kindof leak the internals of the emulator, albeit const.
+    //       This is due to the way triton passes things around...
+    const triton::arch::Register& GetRegister(triton::arch::register_e reg) const;
+
+    // Retrieve the concrete value for the given register id
+    std::optional<triton::uint512> GetRegisterValue(triton::arch::register_e reg);
+
+    // Retrieve the concrete value for the given register object
+    std::optional<triton::uint512> GetRegisterValue(const triton::arch::Register& reg);
+
+    // Retrieve the register AST from the current context
+    triton::ast::SharedAbstractNode GetRegisterAst(triton::arch::register_e reg);
+
+    // Retrieve the register AST from the register object
+    triton::ast::SharedAbstractNode GetRegisterAst(const triton::arch::Register& reg);
+
+    // Retrieve the register AST from the register object
+    //triton::ast::SharedAbstractNode GetRegisterAst(const triton::arch::Register& reg) const;
+
+    // Set the given register ID to the specified value.
+    void SetRegisterValue(triton::arch::register_e reg, uint64_t value);
+
+    // Retrieve the symbolic register expression
+    const triton::engines::symbolic::SharedSymbolicExpression& GetSymbolicRegisterExpression(triton::arch::register_e reg);
+
+    // Retrieve the symbolic register expression
+    const triton::engines::symbolic::SharedSymbolicExpression& GetSymbolicRegisterExpression(const triton::arch::Register& reg);
+
+    // Retrieve the concrete value for the given memory location
+    std::optional<std::vector<uint8_t>> GetMemoryValue(uint64_t address, size_t size);
+
+    // Retrieve the concrete value for the given memory location
+    std::optional<triton::uint512> GetMemoryValue(triton::arch::MemoryAccess& mem);
+
+    // Get the memory value at the address stored in `reg`
+    //std::optional<triton::uint512> GetMemoryValue(triton::arch::register_e reg);
+
+    // Get the memory value for the address stored in `reg`, if any
+    std::optional<triton::uint512> GetMemoryValue(triton::arch::register_e reg, size_t size);
+
+    // Retrieve the symbolic memory expression for memory address stored in `reg`
+    const triton::engines::symbolic::SharedSymbolicExpression GetSymbolicMemoryExpression(triton::arch::register_e reg);
+
+    // Symbolize the specified register, thus converting the current expression into a symbolic variable
+    triton::engines::symbolic::SharedSymbolicVariable SymbolizeRegister(const triton::arch::Register& reg, const std::string& alias = "");
+
+    // Is the specified register symbolic?
+    bool IsSymbolic(const triton::arch::Register& reg) const;
+
+    // For smaller types
+    // Returns the memory value for the address stored in `reg`, if any.
+    template<typename T>
+    std::optional<T> GetMemoryValue(triton::arch::register_e reg)
+    {
+        static_assert(std::is_integral_v<T>, "Value is not integral");
+        const triton::arch::Register& r = ctx_.getRegister(reg);
+        const triton::ast::SharedAbstractNode register_ast = ctx_.getRegisterAst(r);
+        if (register_ast->isSymbolized())
+            return std::nullopt; // One symbolic variable is found in the expression. Can't find the address
+        uint64_t address = static_cast<uint64_t>(register_ast->evaluate());
+        if (!ctx_.isConcreteMemoryValueDefined(address, sizeof(T)) || ctx_.isMemorySymbolized(address, sizeof(T)))
+            return std::nullopt;
+        return static_cast<T>(ctx_.getConcreteMemoryValue(triton::arch::MemoryAccess(address, sizeof(T))));
+    };
+
+    // Get the current program counter address.
+    ea_t GetCurrentAddress() const;
+
+    const triton::Context& GetContext() const;
+
+private:
+    // Emulation context
+    triton::Context ctx_;
+};
+
+} // namespace hxemu
