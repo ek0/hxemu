@@ -1,6 +1,7 @@
 #include "hxemu.h"
 
 #include <bytes.hpp>
+#include <ua.hpp>
 
 namespace hxemu
 {
@@ -303,6 +304,17 @@ bool Emulator::IsSymbolic(const triton::arch::Register& reg) const
 const triton::Context& Emulator::GetContext() const
 {
     return ctx_;
+}
+
+std::optional<triton::arch::Instruction> Emulator::FromAddress(ea_t address)
+{
+    insn_t insn;
+    size_t size = decode_insn(&insn, address);
+    if (size <= 0)
+        return std::nullopt;
+    char opcodes[16] = { 0 };
+    get_bytes(opcodes, size, address);
+    return triton::arch::Instruction(address, opcodes, size);
 }
 
 } // namespace hxemu

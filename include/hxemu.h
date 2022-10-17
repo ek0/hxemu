@@ -11,6 +11,8 @@ namespace hxemu
 
 class Emulator; // Required to declare EmulatorHookInterface
 
+// Class used to execute code after specific event during the emulation.
+// To use this, please inherit from this class and see `EmulateUntilSymbolic`
 class EmulatorHookInterface
 {
 public:
@@ -119,6 +121,8 @@ public:
     const triton::Context& GetContext() const;
 
 private:
+    std::optional<triton::arch::Instruction> FromAddress(ea_t address);
+
     // Emulation context
     triton::Context ctx_;
 };
