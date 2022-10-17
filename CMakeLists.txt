@@ -39,6 +39,7 @@ if(NOT DEFINED IDA_SDK)
 endif()
 
 add_library(hxemu
+	"${CMAKE_CURRENT_LIST_DIR}/src/hxemu.h"
 	"${CMAKE_CURRENT_LIST_DIR}/src/hxemu.cc")
 
 target_include_directories(hxemu PRIVATE "${IDA_SDK}\\include")
