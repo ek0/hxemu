@@ -168,12 +168,11 @@ bool Emulator::EmulateOneInstruction(triton::arch::Instruction& instruction)
     return false; // Error happened during emulation, nontifies the caller.
 }
 
-bool Emulator::EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<EmulatorHookInterface> hooks)
+bool Emulator::EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<EmulatorHookInterface> hooks, size_t max_instructions_to_process)
 {
     ea_t current = start_address;
-    size_t max_number_of_instructions_to_process = 50000;
     size_t number_of_instruction_processed = 0;
-    while (number_of_instruction_processed < max_number_of_instructions_to_process)
+    while (number_of_instruction_processed < max_instructions_to_process)
     {
         auto val = FromAddress(current);
         if (!val.has_value())

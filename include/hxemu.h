@@ -41,7 +41,7 @@ public:
     bool EmulateOneInstruction(triton::arch::Instruction& address);
 
     // Emulate code until PC is symbolic
-    bool EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<EmulatorHookInterface> hooks = nullptr);
+    bool EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<EmulatorHookInterface> hooks = nullptr, size_t max_instructions_to_process = 300000);
 
     // Slice expressions
     std::unordered_map<uint64_t, triton::engines::symbolic::SharedSymbolicExpression> SliceExpression(const triton::engines::symbolic::SharedSymbolicExpression& expr);
