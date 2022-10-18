@@ -64,7 +64,7 @@ target_precompile_headers(hxemu PRIVATE <pro.h>)
 target_precompile_headers(hxemu PRIVATE <ua.hpp>)
 target_precompile_headers(hxemu PRIVATE <bytes.hpp>)
 
-target_include_directories(hxemu PRIVATE "${IDA_SDK}\\include")
+target_include_directories(hxemu PUBLIC "${IDA_SDK}\\include")
 target_link_libraries(hxemu "${IDA_SDK}\\lib\\x64_win_vc_64\\ida.lib")
 target_link_libraries(hxemu "${triton_SOURCE_DIR}/lib/triton_all.lib")
 target_include_directories(hxemu PRIVATE "${triton_SOURCE_DIR}/include")
