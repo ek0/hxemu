@@ -66,6 +66,12 @@ public:
     // Retrieve the register AST from the register object
     triton::ast::SharedAbstractNode GetRegisterAst(const triton::arch::Register& reg);
 
+    // Retrieve the memory AST
+    triton::ast::SharedAbstractNode GetMemoryAst(const triton::arch::MemoryAccess& mem);
+
+    // Retrieve the specified operand AST
+    triton::ast::SharedAbstractNode GetOperandAst(const triton::arch::OperandWrapper& op);
+
     // Retrieve the register AST from the register object
     //triton::ast::SharedAbstractNode GetRegisterAst(const triton::arch::Register& reg) const;
 

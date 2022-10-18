@@ -246,6 +246,16 @@ triton::ast::SharedAbstractNode Emulator::GetRegisterAst(const triton::arch::Reg
     return ctx_.getRegisterAst(reg);
 }
 
+triton::ast::SharedAbstractNode Emulator::GetOperandAst(const triton::arch::OperandWrapper& op)
+{
+    return ctx_.getOperandAst(op);
+}
+
+triton::ast::SharedAbstractNode Emulator::GetMemoryAst(const triton::arch::MemoryAccess& mem)
+{
+    return ctx_.getMemoryAst(mem);
+}
+
 const triton::engines::symbolic::SharedSymbolicExpression& Emulator::GetSymbolicRegisterExpression(triton::arch::register_e reg)
 {
     const triton::arch::Register& r = ctx_.getRegister(reg);
