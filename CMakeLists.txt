@@ -4,7 +4,7 @@ include(FetchContent)
 # Required for static windows runtime
 cmake_policy(SET CMP0091 NEW)
 
-project(hxsym CXX)
+project(hxemu CXX)
 
 # Enforce C++ standard
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -26,8 +26,25 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
 	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win-x64-clang-static-relwithdebinfo.zip
 	)
 	FetchContent_MakeAvailable(triton)
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+	#
+	# Fetch triton lib
+	#
+	FetchContent_Declare(
+	  triton
+	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win-x64-clang-static-debug.zip
+	)
+	FetchContent_MakeAvailable(triton)
 else()
 	message(FATAL_ERROR "Unsupported configuration: ${CMAKE_BUILD_TYPE}")
+endif()
+
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+	# IDA Plugin required definitions
+	add_compile_definitions(__NT__)
+	add_compile_definitions(__EA64__)
+else()
+	message(FATAL_ERROR "32bits is not supported.")
 endif()
 
 #
@@ -38,7 +55,7 @@ if(NOT DEFINED IDA_SDK)
 	message(FATAL_ERROR "Please specify the path to the IDA SDK")
 endif()
 
-add_library(hxemu
+add_library(hxemu STATIC
 	"${CMAKE_CURRENT_LIST_DIR}/src/hxemu.cc")
 
 target_include_directories(hxemu PUBLIC "${CMAKE_CURRENT_LIST_DIR}/include")
