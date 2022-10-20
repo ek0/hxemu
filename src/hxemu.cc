@@ -168,7 +168,7 @@ bool Emulator::EmulateOneInstruction(triton::arch::Instruction& instruction)
     return false; // Error happened during emulation, nontifies the caller.
 }
 
-bool Emulator::EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<EmulatorHookInterface> hooks, size_t max_instructions_to_process)
+bool Emulator::EmulateUntilSymbolic(ea_t start_address, std::shared_ptr<EmulatorHookInterface> hooks, size_t max_instructions_to_process)
 {
     ea_t current = start_address;
     size_t number_of_instruction_processed = 0;
@@ -178,12 +178,15 @@ bool Emulator::EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<Emulator
         if (!val.has_value())
             return false;
         triton::arch::Instruction instruction = val.value();
+        ctx_.disassembly(instruction);
+        if (hooks != nullptr)
+            hooks->OnEmulateEnter(*this, instruction);
         // Run before hook if any
-        if (ctx_.processing(instruction) != triton::arch::exception_e::NO_FAULT)
+        if (ctx_.buildSemantics(instruction) != triton::arch::exception_e::NO_FAULT)
             return false; // Error happened
         // Run after hook, if any
         if (hooks != nullptr)
-            hooks->OnEmulateInstruction(*this, instruction);
+            hooks->OnEmulateExit(*this, instruction);
 
         auto rip = ctx_.getRegisterAst(ctx_.getRegister(triton::arch::ID_REG_X86_RIP));
         if (rip->isSymbolized())

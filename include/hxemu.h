@@ -19,7 +19,11 @@ public:
     virtual ~EmulatorHookInterface() {};
 
     // Callback executing after an instruction is executed.
-    virtual void OnEmulateInstruction(Emulator& emulator, triton::arch::Instruction& instruction) = 0;
+    virtual void OnEmulateExit(Emulator& emulator, triton::arch::Instruction& instruction) = 0;
+
+    // Callback executing before an instruction is executed.
+    // Symbolic context hasn't been updated. Instruction disassembly has been populated.
+    virtual void OnEmulateEnter(Emulator& emulator, triton::arch::Instruction& instruction) = 0;
 };
 
 class Emulator
@@ -41,7 +45,7 @@ public:
     bool EmulateOneInstruction(triton::arch::Instruction& address);
 
     // Emulate code until PC is symbolic
-    bool EmulateUntilSymbolic(ea_t start_address, std::unique_ptr<EmulatorHookInterface> hooks = nullptr, size_t max_instructions_to_process = 300000);
+    bool EmulateUntilSymbolic(ea_t start_address, std::shared_ptr<EmulatorHookInterface> hooks = nullptr, size_t max_instructions_to_process = 300000);
 
     // Slice expressions
     std::unordered_map<uint64_t, triton::engines::symbolic::SharedSymbolicExpression> SliceExpression(const triton::engines::symbolic::SharedSymbolicExpression& expr);
@@ -120,11 +124,6 @@ public:
             return std::nullopt;
         return static_cast<T>(ctx_.getConcreteMemoryValue(triton::arch::MemoryAccess(address, sizeof(T))));
     };
-
-    // Get the current program counter address.
-    ea_t GetCurrentAddress() const;
-
-    const triton::Context& GetContext() const;
 
 private:
     std::optional<triton::arch::Instruction> FromAddress(ea_t address);
