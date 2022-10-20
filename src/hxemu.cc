@@ -313,11 +313,6 @@ bool Emulator::IsSymbolic(const triton::arch::Register& reg) const
     return ctx_.isRegisterSymbolized(reg);
 }
 
-const triton::Context& Emulator::GetContext() const
-{
-    return ctx_;
-}
-
 std::optional<triton::arch::Instruction> Emulator::FromAddress(ea_t address)
 {
     insn_t insn;
