@@ -23,7 +23,7 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
 	#
 	FetchContent_Declare(
 	  triton
-	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win64_static_runtime.zip
+	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win64-relwithdebinfo-static_runtime.zip
 	)
 	FetchContent_MakeAvailable(triton)
 #elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
