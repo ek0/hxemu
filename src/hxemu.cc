@@ -1,5 +1,9 @@
 #include "hxemu.h"
 
+#include <triton/tritonToLLVM.hpp>
+
+#include <llvm/IR/LLVMContext.h>
+
 #include <bytes.hpp>
 #include <ua.hpp>
 
@@ -210,6 +214,14 @@ Emulator::SliceExpression(const triton::engines::symbolic::SharedSymbolicExpress
 void Emulator::SymbolizeExpression(const triton::engines::symbolic::SharedSymbolicExpression& expr)
 {
     ctx_.symbolizeExpression(expr->getId(), expr->getAst()->getBitvectorSize());
+}
+
+std::shared_ptr<llvm::Module> Emulator::ConvertToLLVM(const triton::ast::SharedAbstractNode node)
+{
+    llvm::LLVMContext llvm_context;
+    triton::ast::TritonToLLVM lifter(llvm_context);
+    std::shared_ptr<llvm::Module> llvm_module = lifter.convert(node);
+    return llvm_module;
 }
 
 const triton::arch::Register& Emulator::GetRegister(triton::arch::register_e reg) const

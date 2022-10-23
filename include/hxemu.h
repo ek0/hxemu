@@ -1,6 +1,7 @@
 #pragma once
 
 #include <triton/context.hpp>
+#include <llvm/IR/Module.h>
 
 #include <pro.h>
 
@@ -105,6 +106,9 @@ public:
 
     // Symbolize the specified register, thus converting the current expression into a symbolic variable
     triton::engines::symbolic::SharedSymbolicVariable SymbolizeRegister(const triton::arch::Register& reg, const std::string& alias = "");
+
+    // Convert AST to LLVM bitcode
+    std::shared_ptr<llvm::Module> ConvertToLLVM(const triton::ast::SharedAbstractNode node);
 
     // Is the specified register symbolic?
     bool IsSymbolic(const triton::arch::Register& reg) const;

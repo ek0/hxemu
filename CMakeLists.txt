@@ -23,18 +23,18 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
 	#
 	FetchContent_Declare(
 	  triton
-	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win-x64-clang-static-relwithdebinfo.zip
+	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win64_static_runtime.zip
 	)
 	FetchContent_MakeAvailable(triton)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-	#
-	# Fetch triton lib
-	#
-	FetchContent_Declare(
-	  triton
-	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win-x64-clang-static-debug.zip
-	)
-	FetchContent_MakeAvailable(triton)
+#elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+#	#
+#	# Fetch triton lib
+#	#
+#	FetchContent_Declare(
+#	  triton
+#	  URL https://github.com/ek0/triton-build/releases/download/1.0/triton-win-x64-clang-static-debug.zip
+#	)
+#	FetchContent_MakeAvailable(triton)
 else()
 	message(FATAL_ERROR "Unsupported configuration: ${CMAKE_BUILD_TYPE}")
 endif()
@@ -55,6 +55,8 @@ if(NOT DEFINED IDA_SDK)
 	message(FATAL_ERROR "Please specify the path to the IDA SDK")
 endif()
 
+find_package(triton PATHS "${triton_SOURCE_DIR}" CONFIG REQUIRED)
+
 add_library(hxemu STATIC
 	"${CMAKE_CURRENT_LIST_DIR}/src/hxemu.cc")
 
@@ -66,5 +68,4 @@ target_precompile_headers(hxemu PRIVATE <bytes.hpp>)
 
 target_include_directories(hxemu PRIVATE "${IDA_SDK}\\include")
 target_link_libraries(hxemu "${IDA_SDK}\\lib\\x64_win_vc_64\\ida.lib")
-target_link_libraries(hxemu "${triton_SOURCE_DIR}/lib/triton_all.lib")
-target_include_directories(hxemu PUBLIC "${triton_SOURCE_DIR}/include")
+target_link_libraries(hxemu triton::triton)
