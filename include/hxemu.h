@@ -92,6 +92,9 @@ public:
     // Set the triton::Context mode.
     void SetMode(triton::modes::mode_e mode);
 
+    // Set the representation mode for output
+    void SetRepresentationMode(triton::ast::representations::mode_e mode);
+
     // Symbolize all registers
     void SymbolizeAllRegister();
 

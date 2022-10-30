@@ -155,7 +155,7 @@ TEST(EmulatorTest, TestLLVMLifting)
 {
     std::unique_ptr<Trace2> builder = std::make_unique<Trace2>();;
     hxemu::Emulator emulator(triton::arch::ARCH_X86_64, std::move(builder));
-    emulator.SetMode(triton::modes::SYMBOLIZE_LOAD);
+    emulator.SetRepresentationMode(triton::ast::representations::mode_e::PCODE_REPRESENTATION);
     emulator.SetOnLoadMemoryCallback(OnLoadMemory); // Properly prevent triton to concretize RIP during RET
 
     // Have to symbolize RSP.

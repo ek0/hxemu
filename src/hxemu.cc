@@ -37,6 +37,11 @@ void Emulator::SetMode(triton::modes::mode_e mode)
     ctx_.setMode(mode, true);
 }
 
+void Emulator::SetRepresentationMode(triton::ast::representations::mode_e mode)
+{
+    ctx_.setAstRepresentationMode(mode);
+}
+
 void Emulator::SymbolizeAllRegister()
 {
     // PC register
