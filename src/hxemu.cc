@@ -29,7 +29,7 @@ void Emulator::SetRepresentationMode(triton::ast::representations::mode_e mode)
     ctx_.setAstRepresentationMode(mode);
 }
 
-void Emulator::SymbolizeAllRegister()
+void Emulator::SymbolizeAllRegisters()
 {
     // PC register
     ctx_.symbolizeRegister(ctx_.getRegister(triton::arch::register_e::ID_REG_X86_RIP), "rip");

@@ -159,7 +159,7 @@ TEST(EmulatorTest, TestLLVMLifting)
     emulator.SetOnLoadMemoryCallback(OnLoadMemory); // Properly prevent triton to concretize RIP during RET
 
     // Have to symbolize RSP.
-    emulator.SymbolizeAllRegister();
+    emulator.SymbolizeAllRegisters();
     EXPECT_TRUE(emulator.Run(0));
     EXPECT_TRUE(emulator.IsSymbolic(triton::arch::register_e::ID_REG_X86_RAX));
     auto opt = emulator.GetRegisterValue(triton::arch::ID_REG_X86_RAX);

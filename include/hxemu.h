@@ -96,7 +96,7 @@ public:
     void SetRepresentationMode(triton::ast::representations::mode_e mode);
 
     // Symbolize all registers
-    void SymbolizeAllRegister();
+    void SymbolizeAllRegisters();
 
     // Resets the emulator context
     void ResetContext();
