@@ -4,70 +4,37 @@
 
 #include <llvm/IR/LLVMContext.h>
 
-#include <bytes.hpp>
-#include <ua.hpp>
-
 namespace hxemu
 {
 
-void OnLoadMemory(triton::Context& ctx, const triton::arch::MemoryAccess& mem)
-{
-    // HACK: From hxsym:
-    // Triton always conrecretize load and store.
-    // This can cause issues when we're processing traces that reference
-    // memory in our destination register.
-    // Since we rely on "Is this register symbolized?" to know if we successfully
-    // computed a value or not, we needed a way to symbolize memory on demand.
-    //
-    // We use this callback to check if the LeaAst is symbolic (this means there's a symbolic variable
-    // in the expression). And we also check if the computed memory access has a concrete value backing it.
-    // If not, we'll just symbolize the resulting the memory access, which will then be propagated to other
-    // expressions.
-    if (ctx.isMemorySymbolized(mem))
-        return;
-    // Value already defined.
-    if (ctx.isConcreteMemoryValueDefined(mem))
-        return;
-    // FIXME: Some pop/ret instruction will have a null lea ast for some reason.
-    if (mem.getLeaAst() == nullptr)
-    {
-        ctx.symbolizeMemory(mem);
-        return;
-    }
-    // Does the AST contain a symbolic variable? Or has the referenced memory been concretized?
-    if (mem.getLeaAst()->isSymbolized())
-    {
-        ctx.symbolizeMemory(mem);
-        return;
-    }
+//void Emulator::Initialize()
+//{
+//    // Start with symbolizing all registers...
+//    SymbolizeAllRegister();
+//    // Set triton mode. These ones are important for performance purposes.
+//    ctx_.setMode(triton::modes::AST_OPTIMIZATIONS, true);
+//    ctx_.setMode(triton::modes::CONSTANT_FOLDING, true);
+//    ctx_.setMode(triton::modes::MEMORY_ARRAY, true);
+//    // Prevent automatic concretization of memory loads. We don't have to use a hack anymore (?)
+//    //ctx_.setMode(triton::modes::SYMBOLIZE_LOAD, true);
+//    initialized_ = true;
+//}
 
-    // Here we know the address is valid, and we can fetch the data from the IDB
-    std::vector<uint8_t> memory_area(mem.getSize());
-    ssize_t bytes_read = get_bytes(memory_area.data(), mem.getSize(), mem.getAddress());
-    if (bytes_read > 0)
-        ctx.setConcreteMemoryAreaValue(mem.getAddress(), memory_area, false); // We don't exec the callbacks here.
-    else
-        ctx.symbolizeMemory(mem); // Address is probably not in the IDB, maybe an external module or a wrong dump.
+// Set a callback for every memory load encountered.
+void Emulator::SetOnLoadMemoryCallback(triton::callbacks::getConcreteMemoryValueCallback callback)
+{
+    ctx_.addCallback(triton::callbacks::GET_CONCRETE_MEMORY_VALUE, callback);
 }
 
-void OnStoreMemory(triton::Context& ctx, const triton::arch::MemoryAccess& mem)
+// Set a callback for every memory store encountered.
+void Emulator::SetOnStoreMemoryCallback(triton::callbacks::setConcreteMemoryValueCallback callback)
 {
+    ctx_.addCallback(triton::callbacks::SET_CONCRETE_MEMORY_VALUE, callback);
 }
 
-void Emulator::Initialize(ea_t start_address)
+void Emulator::SetMode(triton::modes::mode_e mode)
 {
-    // Start with symbolizing all registers...
-    SymbolizeAllRegister();
-    // Set triton mode.
-    ctx_.setMode(triton::modes::AST_OPTIMIZATIONS, true);
-    ctx_.setMode(triton::modes::CONSTANT_FOLDING, true);
-    // Initialize register
-    ctx_.setConcreteRegisterValue(ctx_.getRegister(triton::arch::register_e::ID_REG_X86_RIP), start_address);
-    //ctx_.setConcreteRegisterValue(ctx_.getRegister(triton::arch::register_e::ID_REG_X86_RSP), 0x500000);
-    // Install a callback to lazy load memory accesses
-    ctx_.addCallback(triton::callbacks::GET_CONCRETE_MEMORY_VALUE, OnLoadMemory);
-    ctx_.addCallback(triton::callbacks::SET_CONCRETE_MEMORY_VALUE, OnStoreMemory);
-    // TODO: Maybe we want to concretize the stack here? Initial value doesn't really matter...
+    ctx_.setMode(mode, true);
 }
 
 void Emulator::SymbolizeAllRegister()
@@ -172,16 +139,24 @@ bool Emulator::EmulateOneInstruction(triton::arch::Instruction& instruction)
     return false; // Error happened during emulation, nontifies the caller.
 }
 
-bool Emulator::EmulateUntilSymbolic(ea_t start_address, std::shared_ptr<EmulatorHookInterface> hooks, size_t max_instructions_to_process)
+bool Emulator::Run(uint64_t start_address, std::shared_ptr<EmulatorHookInterface> hooks, size_t max_instructions_to_process)
 {
-    ea_t current = start_address;
+    if (!initialized_)
+        return false;
+
+    if (factory_ == nullptr)
+        return false; // Can't use Run without a provided instruction builder.
+
+    uint64_t current = start_address;
+    // Initialize register
+    ctx_.setConcreteRegisterValue(ctx_.getRegister(pc_id_), start_address);
     size_t number_of_instruction_processed = 0;
     while (number_of_instruction_processed < max_instructions_to_process)
     {
-        auto val = FromAddress(current);
-        if (!val.has_value())
+        auto opt_insn = factory_->FromAddress(current);
+        if (!opt_insn.has_value())
             return false;
-        triton::arch::Instruction instruction = val.value();
+        triton::arch::Instruction instruction = opt_insn.value();
         ctx_.disassembly(instruction);
         if (hooks != nullptr)
             hooks->OnEmulateEnter(*this, instruction);
@@ -192,14 +167,10 @@ bool Emulator::EmulateUntilSymbolic(ea_t start_address, std::shared_ptr<Emulator
         if (hooks != nullptr)
             hooks->OnEmulateExit(*this, instruction);
 
-        auto rip = ctx_.getRegisterAst(ctx_.getRegister(triton::arch::ID_REG_X86_RIP));
-        if (rip->isSymbolized())
-        {
-            // RIP AST contains a symbolic variable, we don't know where to go...
-            //Log("RIP is symbolized. Can't progress after {:#x}\n", instruction.GetAddress());
+        auto pc_opt = GetRegisterValue(triton::arch::ID_REG_X86_RIP);
+        if (!pc_opt.has_value())
             return true;
-        }
-        current = static_cast<uint64_t>(rip->evaluate());
+        current = static_cast<uint64_t>(pc_opt.value());
         number_of_instruction_processed++;
     }
     return false; // Error happened during emulation, nontifies the caller.
@@ -218,8 +189,7 @@ void Emulator::SymbolizeExpression(const triton::engines::symbolic::SharedSymbol
 
 std::shared_ptr<llvm::Module> Emulator::ConvertToLLVM(const triton::ast::SharedAbstractNode node)
 {
-    llvm::LLVMContext llvm_context;
-    triton::ast::TritonToLLVM lifter(llvm_context);
+    triton::ast::TritonToLLVM lifter(llvm_context_);
     std::shared_ptr<llvm::Module> llvm_module = lifter.convert(node);
     return llvm_module;
 }
@@ -320,20 +290,22 @@ triton::engines::symbolic::SharedSymbolicVariable Emulator::SymbolizeRegister(co
     return ctx_.symbolizeRegister(reg);
 }
 
+triton::engines::symbolic::SharedSymbolicVariable Emulator::SymbolizeRegister(const triton::arch::register_e reg, const std::string& alias)
+{
+    const triton::arch::Register& r = GetRegister(reg);
+    return ctx_.symbolizeRegister(r);
+}
+
 bool Emulator::IsSymbolic(const triton::arch::Register& reg) const
 {
     return ctx_.isRegisterSymbolized(reg);
 }
 
-std::optional<triton::arch::Instruction> Emulator::FromAddress(ea_t address)
+// Is the specified register symbolic
+bool Emulator::IsSymbolic(const triton::arch::register_e reg) const
 {
-    insn_t insn;
-    size_t size = decode_insn(&insn, address);
-    if (size <= 0)
-        return std::nullopt;
-    char opcodes[16] = { 0 };
-    get_bytes(opcodes, size, address);
-    return triton::arch::Instruction(address, opcodes, size);
+    const triton::arch::Register& r = ctx_.getRegister(reg);
+    return IsSymbolic(r);
 }
 
 } // namespace hxemu
