@@ -48,22 +48,6 @@ FetchContent_Declare(
 set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-	# IDA Plugin required definitions
-	add_compile_definitions(__NT__)
-	add_compile_definitions(__EA64__)
-else()
-	message(FATAL_ERROR "32bits is not supported.")
-endif()
-
-#
-# IDA SDK location.
-#
-message(STATUS "IDA SDK location: ${IDA_SDK}")
-if(NOT DEFINED IDA_SDK)
-	message(FATAL_ERROR "Please specify the path to the IDA SDK")
-endif()
-
 find_package(triton PATHS "${triton_SOURCE_DIR}" CONFIG REQUIRED)
 
 add_library(hxemu STATIC

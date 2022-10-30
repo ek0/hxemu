@@ -1,4 +1,4 @@
-# hxemu: Symbolic emulation through Triton in IDA Pro
+# hxemu: Symbolic emulation through Triton
 
 `hxemu` is a small library that leverages triton to perform symbolic execution in an arbitrary context.
 As opposed to other emulators, like Unicorn or bochscpu, triton allows us to emulate code with partial contexts,

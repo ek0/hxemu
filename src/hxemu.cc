@@ -7,19 +7,6 @@
 namespace hxemu
 {
 
-//void Emulator::Initialize()
-//{
-//    // Start with symbolizing all registers...
-//    SymbolizeAllRegister();
-//    // Set triton mode. These ones are important for performance purposes.
-//    ctx_.setMode(triton::modes::AST_OPTIMIZATIONS, true);
-//    ctx_.setMode(triton::modes::CONSTANT_FOLDING, true);
-//    ctx_.setMode(triton::modes::MEMORY_ARRAY, true);
-//    // Prevent automatic concretization of memory loads. We don't have to use a hack anymore (?)
-//    //ctx_.setMode(triton::modes::SYMBOLIZE_LOAD, true);
-//    initialized_ = true;
-//}
-
 // Set a callback for every memory load encountered.
 void Emulator::SetOnLoadMemoryCallback(triton::callbacks::getConcreteMemoryValueCallback callback)
 {
